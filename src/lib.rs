@@ -28,8 +28,8 @@ pub fn get_cmd_line_args() -> CmdLineArgs {
     let name = matches.value_of("NAME").unwrap();
 
     CmdLineArgs {
-        name: String::from(name),
-        config_file: String::from(config_file),
+        name: name.to_string(),
+        config_file: config_file.to_string(),
     }
 }
 
@@ -37,7 +37,7 @@ pub fn get_cmd_line_args() -> CmdLineArgs {
 pub fn default_config() -> String {
     let home: String = match env::var("HOME") {
         Ok(val) => val,
-        _ => String::from("."), // err, just use current directory if no $HOME env
+        _ => ".".to_string(), // err, just use current directory if no $HOME env
     };
     format!("{}/.what-time", home)
 }
