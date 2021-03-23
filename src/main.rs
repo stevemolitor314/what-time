@@ -1,28 +1,15 @@
-use clap::App;
 use std::fs;
-use what_time::{default_config, get_local_time, parse_config};
+use what_time::{get_cmd_line_args, get_local_time, parse_config};
 
 fn main() {
-    // specify command line args:
-    let matches = App::new("what-time")
-        .version("1.0")
-        .about("Prints current time for friends in other time zones, in their time zone.")
-        .args_from_usage(
-            "-c --config=[FILE] 'Friends timezones file, defaults to ~/.what-time'
-             <NAME> 'The name of the friend to report the current time for.'",
-        )
-        .get_matches();
-
-    // parse command line args:
-    let default_config = default_config();
-    let config_file = matches.value_of("config").unwrap_or(&default_config);
-    let name = matches.value_of("NAME").unwrap();
+    // get command line args:
+    let args = get_cmd_line_args();
 
     // read and parse config file:
-    let config = fs::read_to_string(config_file).expect("Could not load config file");
+    let config = fs::read_to_string(args.config_file).expect("Could not load config file");
     let zones = parse_config(&config);
 
     // convert current time to friend's timezone, and print:
-    let local_time = get_local_time(name, zones);
+    let local_time = get_local_time(&args.name, zones);
     println!("{}", local_time);
 }

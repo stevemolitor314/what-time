@@ -1,6 +1,37 @@
 use chrono::prelude::Utc;
 use chrono_tz::*;
+use clap::App;
 use std::{collections::HashMap, env};
+
+/// Parsed command line arguments
+pub struct CmdLineArgs {
+    /// Friend name to report time for
+    pub name: String,
+    /// Path to configuration file
+    pub config_file: String,
+}
+
+pub fn get_cmd_line_args() -> CmdLineArgs {
+    // specify command line args:
+    let matches = App::new("what-time")
+        .version("1.0")
+        .about("Prints current time for friends in other time zones, in their time zone.")
+        .args_from_usage(
+            "-c --config=[FILE] 'Friends timezones file, defaults to ~/.what-time'
+             <NAME> 'The name of the friend to report the current time for.'",
+        )
+        .get_matches();
+
+    // parse command line args:
+    let default_config = default_config();
+    let config_file = matches.value_of("config").unwrap_or(&default_config);
+    let name = matches.value_of("NAME").unwrap();
+
+    CmdLineArgs {
+        name: String::from(name),
+        config_file: String::from(config_file),
+    }
+}
 
 /// Get the default config file path, from `$HOME/.what-time`.
 pub fn default_config() -> String {
