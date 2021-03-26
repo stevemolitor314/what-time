@@ -1,14 +1,14 @@
 [package]
-authors = ["stevemolitor <stevemolitor@gmail.com>"]
+authors = ["stevemolitor <stevemolitor314@gmail.com>"]
 description = "print current time for friends in their time zone"
-documentation = "https://github.com/stevemolitor/what-time"
+documentation = "https://github.com/stevemolitor314/what-time"
 edition = "2018"
-homepage = "https://github.com/stevemolitor/what-time"
+homepage = "https://github.com/stevemolitor314/what-time"
 license = "MIT"
 name = "what-time"
 readme = "README.md"
-repository = "https://github.com/stevemolitor/what-time"
-version = "0.1.0"
+repository = "https://github.com/stevemolitor314/what-time"
+version = "0.1.1"
 
 [dependencies]
 chrono = "0.4.19"
