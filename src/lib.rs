@@ -1,19 +1,17 @@
 use chrono::prelude::Utc;
-use chrono_tz::*;
-use clap::App;
-use std::{collections::HashMap, env};
+use std::{self, collections::HashMap, fs};
 
 /// Parsed command line arguments
 pub struct CmdLineArgs {
     /// Friend name to report time for
     pub name: String,
     /// Path to configuration file
-    pub config_file: String,
+    pub config_path: String,
 }
 
 pub fn get_cmd_line_args() -> CmdLineArgs {
     // specify command line args:
-    let matches = App::new("what-time")
+    let matches = clap::App::new("what-time")
         .version("1.0")
         .about("Prints current time for friends in other time zones, in their time zone.")
         .args_from_usage(
@@ -29,17 +27,22 @@ pub fn get_cmd_line_args() -> CmdLineArgs {
 
     CmdLineArgs {
         name: name.to_string(),
-        config_file: config_file.to_string(),
+        config_path: config_file.to_string(),
     }
 }
 
-/// Get the default config file path, from `$HOME/.what-time`.
+/// Get the default config file path, from `$HOME/.what-time`
 pub fn default_config() -> String {
-    let home: String = match env::var("HOME") {
+    let home: String = match std::env::var("HOME") {
         Ok(val) => val,
         _ => ".".to_string(), // err, just use current directory if no $HOME env
     };
     format!("{}/.what-time", home)
+}
+
+/// Get config file as string.
+pub fn get_config(config_path: &str) -> String {
+    fs::read_to_string(config_path).expect("Could not load config file")
 }
 
 /// Parse config file string into HashMap of name / time zone pairs.
@@ -69,11 +72,11 @@ pub fn parse_config(config: &str) -> HashMap<String, String> {
     zones
 }
 
-/// Convert current time to friend's time zone, format and return as string
+/// Convert current time to friend's time zone, format, and return as string
 pub fn get_local_time(name: &str, zones: HashMap<String, String>) -> String {
     let tz_string = &zones[&name.to_lowercase()];
     let err_msg = format!("Invalid time zone '{}'", tz_string);
-    let tz: Tz = tz_string.parse().expect(&err_msg);
+    let tz: chrono_tz::Tz = tz_string.parse().expect(&err_msg);
     let now = Utc::now();
     now.with_timezone(&tz).format("%a %I:%M %p").to_string()
 }
