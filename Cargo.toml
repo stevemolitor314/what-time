@@ -8,9 +8,11 @@ license = "MIT"
 name = "what-time"
 readme = "README.md"
 repository = "https://github.com/stevemolitor314/what-time"
-version = "0.1.1"
+version = "0.2.0"
 
 [dependencies]
 chrono = "0.4.19"
 chrono-tz = "0.5.3"
 clap = "2.33.3"
+reqwest = { version = "0.11.2", features = [ "blocking"] }
+thiserror = "1.0.24"

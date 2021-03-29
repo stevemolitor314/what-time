@@ -1,21 +1,35 @@
 use chrono::prelude::Utc;
-use std::{self, collections::HashMap, fs};
+use reqwest::blocking::Client;
+use std::{collections::HashMap, fs, io};
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum WhatTimeError {
+    #[error("Error reading config file from disk")]
+    ReadConfigFromDiskError(#[from] io::Error),
+
+    #[error("Error reading config via HTTP request")]
+    ReadConfigViaHttpError(#[from] reqwest::Error),
+
+    #[error("Error parsing timezone string")]
+    ParseTzStringError(String),
+}
 
 /// Parsed command line arguments
 pub struct CmdLineArgs {
     /// Friend name to report time for
     pub name: String,
     /// Path to configuration file
-    pub config_path: String,
+    pub config_path_or_url: String,
 }
 
 pub fn get_cmd_line_args() -> CmdLineArgs {
     // specify command line args:
     let matches = clap::App::new("what-time")
-        .version("1.0")
+        .version("0.2.0")
         .about("Prints current time for friends in other time zones, in their time zone.")
         .args_from_usage(
-            "-c --config=[FILE] 'Friends timezones file, defaults to ~/.what-time'
+            "-c --config=[FILE] 'Friends timezones file, defaults to ~/.what-time. Can be a URL starting with /https?/, in which case the config will be fetched from that URL.'
              <NAME> 'The name of the friend to report the current time for.'",
         )
         .get_matches();
@@ -27,7 +41,7 @@ pub fn get_cmd_line_args() -> CmdLineArgs {
 
     CmdLineArgs {
         name: name.to_string(),
-        config_path: config_file.to_string(),
+        config_path_or_url: config_file.to_string(),
     }
 }
 
@@ -40,9 +54,28 @@ pub fn default_config() -> String {
     format!("{}/.what-time", home)
 }
 
+fn is_url(path: &str) -> bool {
+    path.starts_with("http") || path.starts_with("https")
+}
+
 /// Get config file as string.
-pub fn get_config(config_path: &str) -> String {
-    fs::read_to_string(config_path).expect("Could not load config file")
+pub fn get_config(path_or_url: &str) -> Result<String, WhatTimeError> {
+    if is_url(path_or_url) {
+        get_config_from_http_request(path_or_url)
+    } else {
+        get_config_from_file_path(path_or_url)
+    }
+}
+
+fn get_config_from_file_path(config_path: &str) -> Result<String, WhatTimeError> {
+    let text = fs::read_to_string(config_path)?;
+    Ok(text)
+}
+
+fn get_config_from_http_request(url: &str) -> Result<String, WhatTimeError> {
+    let client = Client::new();
+    let text = client.get(url).send()?.text()?;
+    Ok(text)
 }
 
 /// Parse config file string into HashMap of name / time zone pairs.
@@ -73,12 +106,19 @@ pub fn parse_config(config: &str) -> HashMap<String, String> {
 }
 
 /// Convert current time to friend's time zone, format, and return as string
-pub fn get_local_time(name: &str, zones: HashMap<String, String>) -> String {
+pub fn get_local_time(name: &str, zones: HashMap<String, String>) -> Result<String, WhatTimeError> {
     let tz_string = &zones[&name.to_lowercase()];
-    let err_msg = format!("Invalid time zone '{}'", tz_string);
-    let tz: chrono_tz::Tz = tz_string.parse().expect(&err_msg);
+    let parse_result = tz_string.parse();
+
+    let tz: chrono_tz::Tz;
+    match parse_result {
+        Ok(t) => tz = t,
+        Err(err) => return Err(WhatTimeError::ParseTzStringError(err)),
+    }
+
     let now = Utc::now();
-    now.with_timezone(&tz).format("%a %I:%M %p").to_string()
+    let local_time = now.with_timezone(&tz).format("%a %I:%M %p").to_string();
+    Ok(local_time)
 }
 
 #[cfg(test)]
@@ -102,5 +142,12 @@ sally NZ
         let config = "Bob   America/Chicago";
         let zones = parse_config(config);
         assert_eq!(zones["bob"], "America/Chicago");
+    }
+
+    #[test]
+    fn test_is_url() {
+        assert!(is_url("http://"));
+        assert!(is_url("https://"));
+        assert!(!is_url("./what-time"))
     }
 }

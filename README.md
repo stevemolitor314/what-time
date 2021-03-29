@@ -43,6 +43,13 @@ override with the `--config` flag:
 
 See [List of tz database time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) for valid time zone strings.
 
+The config can be a URL starting with /https?/, in which case the config will be fetched from that URL. For example:
+
+```
+>% what-time --config https://gist.githubusercontent.com/stevemolitor314/ecf5bd9b1c7c36a78c3ae1c29ff20a7b/raw/12d56e13ad3a3c191969ecac9034be0df2026c63/what-time.txt josh
+>% Sat 05:32 AM
+```
+
 ## Help
 
 Pass the `--help` option to see the usage information:
@@ -60,7 +67,8 @@ FLAGS:
     -V, --version    Prints version information
 
 OPTIONS:
-    -c, --config <FILE>    Friends timezones file, defaults to ~/.what-time
+    -c, --config <FILE>    Friends timezones file, defaults to ~/.what-time. Can be a URL starting with /https?/, in
+                           which case the config will be fetched from that URL.
 
 ARGS:
     <NAME>    The name of the friend to report the current time for.
